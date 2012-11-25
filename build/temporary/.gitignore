@@ -1,0 +1,14 @@
+# Liste af filer der ikke skal håndteres af git, 
+# både filer, mapper og wildcards kan bruges i definitionerne
+
+# Index filer fra compile-doc
+Rapport/Documents/p5Presentation/index.tex
+Rapport/Documents/Worksheets/index.tex
+Rapport/Documents/Referater/index.tex
+Rapport/Documents/p5DOC/index.tex
+
+# Compilede latex documenter
+Rapport/p5Presentation.pdf
+Rapport/Worksheets.pdf
+Rapport/Referater.pdf
+Rapport/p5DOC.pdf

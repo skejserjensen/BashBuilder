@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Git hook for running BashBuilder when the server have received a push
+
+# Reads the input given from git to prevent undefined behaviour,
+# but the information is not used inside the build system as it
+# allows bashbuilder to be run from various different hooks
+while read oldrev newrev refname
+do
+:
+done
+
+# Calls the build script but discards its output from both stdout and stderr 
+bash /"The path to the bashbuilder folder"/build/bashbuilder.sh >/dev/null 2>&1 &
