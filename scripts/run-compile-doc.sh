@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Compile Latex documents using compile-doc.sh by Daniel Hillerstrôm, and a small home written wrapper script.
+# Compile LaTeX documents using compile-doc.sh by Daniel Hillerstrôm, and a small home written wrapper script.
 
 # Enable and disable optional features
 # 0: Disable 
