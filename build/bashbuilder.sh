@@ -44,7 +44,6 @@ function createTempDirectory()
 
 function extractBranchHead()
 {
-    # TODO: Make the branch to extract a configurable parameter
     cd $REPOPATH && git archive master | tar -x -C $TEMPDIR 
 }
 
@@ -90,7 +89,7 @@ function executeOptionalFeatures()
 
 function runBuildScripts()
 {
-    # The log file name is saved in case on the build scripts changes the value of the varialbe instead of just appending text to the file
+    # The log file name is saved in case on the build scripts changes the value of the variable instead of just appending text to the file
     ORGLOGFILE=$LOGFILE
     
     for FILE in `find $SCRIPTPATH/scripts -executable -type f` ; do
@@ -105,7 +104,7 @@ function runBuildScripts()
             EMAILMESSAGE=$EMAILMESSAGE"Executing "${FILE##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $LOGFILE)"\n\n"
         fi
 
-        # Some people might not like data on their filesystem getting overwritten by /dev/null, so we check if they accedently changed the location of the log 
+        # Some people might not like data on their file system getting overwritten by /dev/null, so we check if they accidentally changed the location of the log 
         if [ $ORGLOGFILE != $LOGFILE ]
         then
            LOGFILE=$ORGLOGFILE 

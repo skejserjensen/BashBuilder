@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Compile LaTex documnets using compile-doc.sh by Daniel Hillerstrôm, and a small home written wrapper script.
+# Compile Latex documents using compile-doc.sh by Daniel Hillerstrôm, and a small home written wrapper script.
 
-# Enable and disable optinonal features
+# Enable and disable optional features
 # 0: Disable 
 # 1: Enable 
 ERRORBIB=0
@@ -46,5 +46,5 @@ done
 # The log information generated is written to the temp log file
 echo $LOG > $1
 
-# The exit code are the total sum of errors as we want to be informed about anything abow zero
+# The exit code are the total sum of errors as we want to be informed about anything above zero
 exit $ERRORS
