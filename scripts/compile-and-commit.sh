@@ -4,8 +4,8 @@
 # The script does not report error that happens doing the compilation, instead it commit the file that could be compiled to an external repository with a working directory
 
 # Configuration
-COMPILEDOCROOT="Dokumenter"
-EXTERNALGITREPO="/home/git/compiled.git"
+COMPILEDOCROOT="The folder that contains the CompileThemAll.sh script"
+EXTERNALGITREPO="The path to the git repo containing a compile-doc structure"
 
 # Ensures that the external repository actually does exist before we try to commit to it
 if [[ ! -d "$EXTERNALGITREPO""/.git" && ! -d "$EXTERNALGITREPO"".git" ]];
