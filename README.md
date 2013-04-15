@@ -34,4 +34,4 @@ Also a file name is given to the build scripts as a command line argument, you c
 + Make the branch extracted by BashBuilder a configurable parameter.
 
 ##License
-The program is license under version 3 of the GPL, and a copy of the license is bundled with the program.
+The program is licensed under version 3 of the GPL, and a copy of the license is bundled with the program.
