@@ -14,6 +14,8 @@ EXTRACTEMAILADRESS=0    # Extract the email address to use when any errors have 
 
 
 # The functions and variables used below should work properly without any changes, unless there is a bug in the system of course
+set -o nounset
+
 # Setup phase functions
 function setVariables()
 {
