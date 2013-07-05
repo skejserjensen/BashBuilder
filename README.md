@@ -18,7 +18,7 @@ Git is currently the only supported version control system, but support for both
 1. Install bash, grep and coreutils, most Unix like operation systems comes with pre-installed variants of these.
 2. Install one of the many programs that provide the mail program for bash such as heirloom-mailx and configure it to use your preferred mail server.
 3. Copy the "/build" folder to anywhere on your file system from where it can accesses the repositories it should run the build scripts on.
-4. Configure bashbuilder.sh by setting the three uppercased variables in the top of the script to your desired values.
+4. Configure bashbuilder by changing the values of the variables in config.sh, only the three top variables are required,  the rest is optional.
 5. Put some build scripts in the scripts directory and make them executable, all non executable files in the directory is ignored.
 6. Configure the hooks in your version control system so bashbuilder.sh is run automatically, a git hook is provided as example.
 
