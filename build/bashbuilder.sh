@@ -7,7 +7,13 @@ SetVariables()
 {
     # Global variables are set here to prevent undefined behaviour
     errors=0
-    
+
+    #Extraction of the repository name requires that the path does not end with /
+    if [[ "$REPOPATH" == */ ]]
+    then
+        REPOPATH=${REPOPATH%?}
+    fi
+
     scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     tempRoot=$scriptPath"/temporary/"
 }
@@ -32,7 +38,7 @@ CreateTempDirectory()
 
 ExtractBranchHead()
 {
-    cd $REPOPATH && git archive master | tar -x -C "$tempDir"
+    cd "$REPOPATH" && git archive master | tar -x -C "$tempDir"
 }
 
 CreateLogFile()
@@ -79,7 +85,7 @@ RunBuildScripts()
 {
     # The log file name is saved in case on the build scripts changes the value of the variable instead of just appending text to the file
     local orgLogFile=$logFile
-    emailMessage=""
+    message=""
     
     for file in `find $scriptPath/scripts -executable -type f` ; do
         cd $tempDir
@@ -90,7 +96,7 @@ RunBuildScripts()
         if [ ! $result -eq 0 ]  
         then
             let errors+=$result
-            emailMessage=$emailMessage"Executing "${file##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $logFile)"\n\n"
+            message=$message"Executing "${file##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $logFile)"\n\n"
         fi
 
         # Some people might not like data on their file system getting overwritten by /dev/null, so we check if they accidentally changed the location of the log 
@@ -108,31 +114,53 @@ RunBuildScripts()
 # Respond phase functions
 SendEmail()
 {
-    if [ $errors -ne 0 ]
+    if [ $EMAILBUILDERRORS -eq 1 ]
     then
-        local subject="Build failed"
-        local email="/tmp/bashbuilderemail"
+        if [ $errors -ne 0 ]
+        then
+            if  type -p mail > /dev/null;
+            then
+                local subject="Build failed"
+                local email="/tmp/bashbuilderemail"
 
-        # The spinlock prevents the program from overwriting $EMAILTEXT if another instance of the program is using it
-        while [ -f "$email" ]
-        do
-            sleep 5s
-        done
+                # The spinlock prevents the program from overwriting $email if another instance of the program is using it
+                while [ -f "$email" ]
+                do
+                    sleep 5s
+                done
 
-        printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$emailMessage" > "$email"
-        mail -s "$subject" "$EMAILADRESS" < "$email"
+                printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$message" > "$email"
+                mail -s "$subject" "$EMAILADRESS" < "$email"
 
-        # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
-        rm -rf $email
+                # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
+                rm -rf $email
+            else
+                WriteErrorLog "mail is not located in path, email with build errors could not be send"
+            fi
+        fi
     fi
 }
 
-WriteLog()
+WriteBuildLog()
 {
     if [ $errors -ne 0 ]
     then
         cd "$scriptPath"
-        echo "$USERNAME" "${REPOPATH##*/}" "$(date)" >> ./log
+        echo -e "[Date: $(date)""\tRepository: ${REPOPATH##*/}""\tUser: $USERNAME]" >> ./build.log
+
+        if [ $LOGBUILDERRORS -eq 1 ] 
+        then 
+            echo -e "$message" >> ./build.log
+        fi
+    fi
+}
+
+WriteErrorLog()
+{
+    if [ "$1" != "" ]
+    then
+        cd "$scriptPath"
+        echo -e "[Date: $(date)""\tRepository: ${REPOPATH##*/}]\n""\tMesseage: $1" >> ./error.log
     fi
 }
 
@@ -157,7 +185,7 @@ RunBuildScripts
 
 # Respond phase
 SendEmail
-WriteLog
+WriteBuildLog
 
 # Cleanup phase
 CleanUp
