@@ -3,160 +3,161 @@ source ./config.sh
 set -o nounset
 
 # Setup phase functions
-function setVariables()
+SetVariables()
 {
     # Global variables are set here to prevent undefined behaviour
-    ERRORS=0
+    errors=0
     
-    SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    TEMPROOT=$SCRIPTPATH"/temporary/"
+    scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    tempRoot=$scriptPath"/temporary/"
 }
 
-function createTempDirectory()
+CreateTempDirectory()
 {
-    TEMPDIRNUMBER=0
+    local tempDirNumber=0
 
     # The first directory which has yet to be used is created and set as temp directory, and the loop is terminated
     while [ true ]
     do
-        TEMPDIR="$TEMPROOT$TEMPDIRNUMBER"
+        tempDir="$tempRoot$tempDirNumber"
         
-        if [ ! -d "$TEMPDIR" ]
+        if [ ! -d "$tempDir" ]
         then
-            mkdir "$TEMPDIR"
+            mkdir "$tempDir"
             break
         fi
-            let TEMPDIRNUMBER++
+            let tempDirNumber++
     done
 }
 
-function extractBranchHead()
+ExtractBranchHead()
 {
-    cd $REPOPATH && git archive master | tar -x -C $TEMPDIR 
+    cd $REPOPATH && git archive master | tar -x -C "$tempDir"
 }
 
-function createLogFile()
+CreateLogFile()
 {
-    LOGFILENUMBER=0
+    local logFileNumber=0
 
     while [ true ]
     do
-        LOGFILE="$TEMPDIR/$LOGFILENUMBER"
+        logFile="$tempDir/$logFileNumber"
 
-        if [  ! -f "$LOGFILE" ]
+        if [  ! -f "$logFile" ]
         then
-            echo "" > $LOGFILE
+            echo "" > $logFile
             break
         fi
 
-        let LOGFILENUMBER++
+        let logFileNumber++
     done
 }
 
 # Execution phase functions 
-function executeOptionalFeatures()
+ExecuteOptionalFeatures()
 {
     # Gets the email of the user who made the most recent commit
     if [ $EXTRACTEMAILADRESS -eq 1 ]
     then
-        cd $REPOPATH
+        cd "$REPOPATH"
         EMAILADRESS=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=<).*?(?=>)')
 
         # Emails should work in upper case, but they are changed to lowercase just as a precaution
-        EMAILADRESS=$(echo $EMAILADRESS | tr '[A-Z]' '[a-z]')
+        EMAILADRESS=$(echo "$EMAILADRESS" | tr '[A-Z]' '[a-z]')
 
     fi
 
     # Gets the name of the user who made the most recent commit
     if [ $EXTRACTUSERNAME -eq 1 ]
     then
-        cd $REPOPATH
+        cd "$REPOPATH"
         USERNAME=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=Author: ).*?(?= <)')
     fi
 }
 
-function runBuildScripts()
+RunBuildScripts()
 {
     # The log file name is saved in case on the build scripts changes the value of the variable instead of just appending text to the file
-    ORGLOGFILE=$LOGFILE
+    local orgLogFile=$logFile
+    emailMessage=""
     
-    for FILE in `find $SCRIPTPATH/scripts -executable -type f` ; do
-        cd $TEMPDIR
+    for file in `find $scriptPath/scripts -executable -type f` ; do
+        cd $tempDir
 
-        $FILE $LOGFILE
-        let RESULT=$? 
+        $file $logFile
+        let result=$? 
        
-        if [ ! $RESULT -eq 0 ]  
+        if [ ! $result -eq 0 ]  
         then
-            let ERRORS+=$RESULT
-            EMAILMESSAGE=$EMAILMESSAGE"Executing "${FILE##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $LOGFILE)"\n\n"
+            let errors+=$result
+            emailMessage=$emailMessage"Executing "${file##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $logFile)"\n\n"
         fi
 
         # Some people might not like data on their file system getting overwritten by /dev/null, so we check if they accidentally changed the location of the log 
-        if [ $ORGLOGFILE != $LOGFILE ]
+        if [ $orgLogFile != $logFile ]
         then
-           LOGFILE=$ORGLOGFILE 
+           logFile=$orgLogFile 
         fi
 
         # The contents of the log file is truncated so its content don't gets written more then once in the email
-        cat /dev/null > $LOGFILE
+        cat /dev/null > $logFile
     done                                                                                                            
 }
 
 
 # Respond phase functions
-function sendEmail()
+SendEmail()
 {
-    if [ $ERRORS -ne 0 ]
+    if [ $errors -ne 0 ]
     then
-        SUBJECT="Build failed"
-        EMAIL="/tmp/bashbuilderemail"
+        local subject="Build failed"
+        local email="/tmp/bashbuilderemail"
 
         # The spinlock prevents the program from overwriting $EMAILTEXT if another instance of the program is using it
-        while [ -f $EMAIL ]
+        while [ -f "$email" ]
         do
             sleep 5s
         done
 
-        printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$EMAILMESSAGE" > $EMAIL
-        mail -s "$SUBJECT" "$EMAILADRESS" < $EMAIL
+        printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$emailMessage" > "$email"
+        mail -s "$subject" "$EMAILADRESS" < "$email"
 
         # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
-        rm -rf $EMAIL
+        rm -rf $email
     fi
 }
 
-function writeLog()
+WriteLog()
 {
-    if [ $ERRORS -ne 0 ]
+    if [ $errors -ne 0 ]
     then
-        cd $SCRIPTPATH
+        cd "$scriptPath"
         echo "$USERNAME" "${REPOPATH##*/}" "$(date)" >> ./log
     fi
 }
 
 
 # Cleanup phase functions
-function cleanUp()
+CleanUp()
 {
-    rm -rf $TEMPDIR                                           
+    rm -rf "$tempDir"
 }
 
 
 # The main subroutine starts here
 # Setup phase
-setVariables
-createTempDirectory
-extractBranchHead
-createLogFile
+SetVariables
+CreateTempDirectory
+ExtractBranchHead
+CreateLogFile
 
 # Execution phase
-executeOptionalFeatures
-runBuildScripts
+ExecuteOptionalFeatures
+RunBuildScripts
 
 # Respond phase
-sendEmail
-writeLog
+SendEmail
+WriteLog
 
 # Cleanup phase
-cleanUp
+CleanUp
