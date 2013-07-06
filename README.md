@@ -8,11 +8,11 @@ The following dependencies should be installed before installing BashBuilder.
 + GNU coreutils
 + GNU grep
 + mail
-+ Git
++ Supported version control system
 
 The program was tested on various distributions of Linux all using the GNU versions of bash, coreutils and grep. 
 
-Git is currently the only supported version control system, but support for both Subversion and Mercurial is planned.
+BashBuilder currently supports  Subversion, Git and Mercurial. But has been most thoroughly tested with Git.
 
 ## Installation
 1. Install bash, grep and coreutils, most Unix like operation systems comes with pre-installed variants of these.

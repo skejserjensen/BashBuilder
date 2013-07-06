@@ -14,6 +14,22 @@ SetVariables()
         REPOPATH=${REPOPATH%?}
     fi
 
+    #Checks what version control system is used
+    #0: subversion, 1: git, 2: mercurial
+    versionControlSystem=""
+    if [ -f "$REPOPATH""/format" ]
+    then
+        versionControlSystem=0
+   elif [ -f "$REPOPATH""/HEAD" ]
+   then
+        versionControlSystem=1
+   elif [ -d "$REPOPATH""/.hg" ]
+   then
+        versionControlSystem=2
+   else
+       CreateLogFile "repopath is not set to a suported version control repository"
+    fi
+
     scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     tempRoot=$scriptPath"/temporary/"
 }
@@ -38,7 +54,16 @@ CreateTempDirectory()
 
 ExtractBranchHead()
 {
-    cd "$REPOPATH" && git archive master | tar -x -C "$tempDir"
+    case $versionControlSystem in
+        0)
+            cd "$tempDir" && svn checkout "file://""$REPOPATH" .;;
+        1)
+            cd "$REPOPATH" && git archive master | tar -x -C "$tempDir";;
+        2)
+            cd "$REPOPATH" && hg archive -p . "$tempDir""/data.tar"
+            cd "$tempDir" && tar xf ./data.tar && rm -rf ./data.tar
+            ;;
+    esac
 }
 
 CreateLogFile()
@@ -124,9 +149,11 @@ SendEmail()
                 local email="/tmp/bashbuilderemail"
 
                 # The spinlock prevents the program from overwriting $email if another instance of the program is using it
+                local let emailSuffix=0
                 while [ -f "$email" ]
                 do
-                    sleep 5s
+                    email="$email""$emailSuffix"
+                    let emailSuffix++
                 done
 
                 printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$message" > "$email"
@@ -146,7 +173,7 @@ WriteBuildLog()
     if [ $errors -ne 0 ]
     then
         cd "$scriptPath"
-        echo -e "[Date: $(date)""\tRepository: ${REPOPATH##*/}""\tUser: $USERNAME]" >> ./build.log
+        echo -e "[Date: $(date)""    Repository: ${REPOPATH##*/}""    User: $USERNAME]" >> ./build.log
 
         if [ $LOGBUILDERRORS -eq 1 ] 
         then 
@@ -160,7 +187,7 @@ WriteErrorLog()
     if [ "$1" != "" ]
     then
         cd "$scriptPath"
-        echo -e "[Date: $(date)""\tRepository: ${REPOPATH##*/}]\n""\tMesseage: $1" >> ./error.log
+        echo -e "[Date: $(date)""    Repository: ${REPOPATH##*/}]\n""    Messeage: $1" >> ./error.log
     fi
 }
 
