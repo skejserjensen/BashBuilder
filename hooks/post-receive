@@ -10,5 +10,9 @@ do
 :
 done
 
+# The hook knows where the repository is located on the file system so no need to require it in config.sh
+path=$(pwd)
+path=${path%%/hooks}
+
 # Calls the build script but discards its output from both stdout and stderr 
-bash /"The path to the BashBuilder folder"/build/bashbuilder.sh >/dev/null 2>&1 &
+bash /"The path to the BashBuilder folder"/build/bashbuilder.sh "$path" >/dev/null 2>&1 &

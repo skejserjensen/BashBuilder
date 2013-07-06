@@ -1,21 +1,32 @@
 #!/bin/bash
 source ./config.sh
-set -o nounset
 
 # Setup phase functions
 SetVariables()
 {
-    # Global variables are set here to prevent undefined behaviour
-    errors=0
+    # Ensures BashBuilder know where to write the log files if errors occurs
+    scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    tempRoot=$scriptPath"/temporary/"
 
-    #Extraction of the repository name requires that the path does not end with /
+    # Checks if the user have provided the path to the repository from the hook
+    if [ -d "$1" ]
+    then
+        REPOPATH="$1"
+    elif [ ! -d "$REPOPATH" ]
+    then
+        WriteErrorLog "neither hook nor config.sh provided a working path"
+        exit 1
+    fi
+
+
+    # Extraction of the repository name requires that the path does not end with /
     if [[ "$REPOPATH" == */ ]]
     then
         REPOPATH=${REPOPATH%?}
     fi
 
-    #Checks what version control system is used
-    #0: subversion, 1: git, 2: mercurial
+    # Checks what version control system is used
+    # 0: subversion, 1: git, 2: mercurial
     versionControlSystem=""
     if [ -f "$REPOPATH""/format" ]
     then
@@ -27,11 +38,9 @@ SetVariables()
    then
         versionControlSystem=2
    else
-       CreateLogFile "repopath is not set to a suported version control repository"
+       WriteErrorLog "repopath is not set to a suported version control repository"
+       exit 1
     fi
-
-    scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    tempRoot=$scriptPath"/temporary/"
 }
 
 CreateTempDirectory()
@@ -110,6 +119,7 @@ RunBuildScripts()
 {
     # The log file name is saved in case on the build scripts changes the value of the variable instead of just appending text to the file
     local orgLogFile=$logFile
+    let errors=0
     message=""
     
     for file in `find $scriptPath/scripts -executable -type f` ; do
@@ -163,6 +173,7 @@ SendEmail()
                 rm -rf $email
             else
                 WriteErrorLog "mail is not located in path, email with build errors could not be send"
+                exit 1
             fi
         fi
     fi
@@ -200,8 +211,11 @@ CleanUp()
 
 
 # The main subroutine starts here
+argumentPath="$1"
+set -o nounset
+
 # Setup phase
-SetVariables
+SetVariables "$argumentPath" #The user could have provided the path to the repository from the hook
 CreateTempDirectory
 ExtractBranchHead
 CreateLogFile

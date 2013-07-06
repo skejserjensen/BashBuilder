@@ -7,7 +7,7 @@ The following dependencies should be installed before installing BashBuilder.
 + GNU bash
 + GNU coreutils
 + GNU grep
-+ mail
++ mail (Optional)
 + Supported version control system
 
 The program was tested on various distributions of Linux all using the GNU versions of bash, coreutils and grep. 
@@ -16,7 +16,7 @@ BashBuilder currently supports  Subversion, Git and Mercurial. But has been most
 
 ## Installation
 1. Install bash, grep and coreutils, most Unix like operation systems comes with pre-installed variants of these.
-2. Install one of the many programs that provide the mail program for bash such as heirloom-mailx and configure it to use your preferred mail server.
+2. (Optional) Install one of the many programs that provide the mail program for bash such as heirloom-mailx and configure it to use your preferred mail server. 
 3. Copy the "/build" folder to anywhere on your file system from where it can accesses the repositories it should run the build scripts on.
 4. Configure bashbuilder by changing the values of the variables in config.sh, only the three top variables are required,  the rest is optional.
 5. Put some build scripts in the scripts directory and make them executable, all non executable files in the directory is ignored.
@@ -28,10 +28,6 @@ The build scripts is what contains the logic about how to actually build your so
 The build script functions much like git hooks which means that the only value BashBuilder is concerned about is the scripts exit code, BashBuilder follows the same conventions as git hooks which means that if the exit code is zero then the scripts ran with success and everything else is a failure and will be reported. 
 
 Also a file name is given to the build scripts as a command line argument, you can use this file to log what part of the build that failed as BashBuilder will included it in the email as extra information. Some examples of how build scripts can be written are stored in the "/scripts" folder found in the root of the repository. 
-
-## Todo
-+ Add support for Subversion and Mercurial.
-+ Make the branch extracted by BashBuilder a configurable parameter.
 
 ##License
 The program is licensed under version 3 of the GPL, and a copy of the license is bundled with the program.

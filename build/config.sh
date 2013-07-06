@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # The configuration below needs to be set for the script to run
-REPOPATH="Path to your repository"
+REPOPATH="Path to your repository" # Can also be set by hook by passing first commandline argument to bashbuilder.sh
 
 USERNAME="The name to be used at the top of the emails"
 EMAILADRESS="Email address to write to when problems occurs"
