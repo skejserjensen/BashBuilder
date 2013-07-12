@@ -1,7 +1,9 @@
 #!/bin/bash
 source ./config.sh
 
-# Setup phase functions
+########################################
+# Setup phase functions                #
+########################################
 SetVariables()
 {
     # Ensures BashBuilder know where to write the log files if errors occurs
@@ -43,6 +45,48 @@ SetVariables()
     fi
 }
 
+ExtractUsernameAndEmail()
+{
+    # Gets the email of the user who made the most recent commit
+    if [ $EXTRACTEMAILADRESS -eq 1 ]
+    then
+        cd "$REPOPATH"
+        case $versionControlSystem in
+            0)
+                # The same filed is used for both username and email as svn does only have one identifier
+                EMAILADRESS=$(echo $(svn log -l1) | grep -Po '^r.*?\|\s\K.*?(?=\s\|)');;
+            1)
+                EMAILADRESS=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=<).*?(?=>)');;
+            2)
+                EMAILADRESS=$(echo $(hg log -r tip) | grep  -Po '^.*?\K(?<=<).*?(?=>)');;
+        esac
+
+        # Checks if the extracted output looks like a email before trying to use it for sending email notifications
+        if [[ "$EMAILADRESS" != *@*.* ]]
+        then
+            WriteErrorLog "an useable email could not be extracted from the log file, email with build errors cannot be send"
+            EMAILBUILDERRORS=0
+        fi
+
+        # Emails should work in upper case, but they are changed to lowercase just as a precaution
+        EMAILADRESS=$(echo "$EMAILADRESS" | tr '[A-Z]' '[a-z]')
+    fi
+
+    # Gets the name of the user who made the most recent commit
+    if [ $EXTRACTUSERNAME -eq 1 ]
+    then
+        cd "$REPOPATH"
+        case $versionControlSystem in
+            0)
+                USERNAME=$(echo $(svn log -l1) | grep -Po '^r.*?\|\s\K.*?(?=\s\|)');;
+            1)
+                USERNAME=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=Author: ).*?(?= <)');;
+            2)
+                USERNAME=$(echo $(hg log -r tip) | grep  -Po '^.*?\K(?<=user:\s{8}).*?(?= <)');;
+        esac
+    fi
+}
+
 CreateTempDirectory()
 {
     local tempDirNumber=0
@@ -61,7 +105,7 @@ CreateTempDirectory()
     done
 }
 
-ExtractBranchHead()
+ExtractMasterBranchHead()
 {
     case $versionControlSystem in
         0)
@@ -69,9 +113,8 @@ ExtractBranchHead()
         1)
             cd "$REPOPATH" && git archive master | tar -x -C "$tempDir";;
         2)
-            cd "$REPOPATH" && hg archive -p . "$tempDir""/data.tar"
-            cd "$tempDir" && tar xf ./data.tar && rm -rf ./data.tar
-            ;;
+            cd "$REPOPATH" && hg archive -p . -r tip "$tempDir""/data.tar"
+            cd "$tempDir" && tar xf ./data.tar && rm -rf ./data.tar;;
     esac
 }
 
@@ -93,31 +136,12 @@ CreateLogFile()
     done
 }
 
-# Execution phase functions 
-ExecuteOptionalFeatures()
-{
-    # Gets the email of the user who made the most recent commit
-    if [ $EXTRACTEMAILADRESS -eq 1 ]
-    then
-        cd "$REPOPATH"
-        EMAILADRESS=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=<).*?(?=>)')
-
-        # Emails should work in upper case, but they are changed to lowercase just as a precaution
-        EMAILADRESS=$(echo "$EMAILADRESS" | tr '[A-Z]' '[a-z]')
-
-    fi
-
-    # Gets the name of the user who made the most recent commit
-    if [ $EXTRACTUSERNAME -eq 1 ]
-    then
-        cd "$REPOPATH"
-        USERNAME=$(echo $(git log -n1) | grep -Po '^.*?\K(?<=Author: ).*?(?= <)')
-    fi
-}
-
+########################################
+# Execution phase functions            #
+########################################
 RunBuildScripts()
 {
-    # The log file name is saved in case on the build scripts changes the value of the variable instead of just appending text to the file
+    # The log file name is saved in case one of the build scripts changes the value of the variable instead of just appending text to the file
     local orgLogFile=$logFile
     let errors=0
     message=""
@@ -146,7 +170,9 @@ RunBuildScripts()
 }
 
 
-# Respond phase functions
+########################################
+# Respond phase functions              #
+########################################
 SendEmail()
 {
     if [ $EMAILBUILDERRORS -eq 1 ]
@@ -158,7 +184,7 @@ SendEmail()
                 local subject="Build failed"
                 local email="/tmp/bashbuilderemail"
 
-                # The spinlock prevents the program from overwriting $email if another instance of the program is using it
+                # A unique file is need to prevent overriding the 
                 local let emailSuffix=0
                 while [ -f "$email" ]
                 do
@@ -166,7 +192,7 @@ SendEmail()
                     let emailSuffix++
                 done
 
-                printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and push a new revision.\n\n$message" > "$email"
+                printf "Dear $USERNAME\nSome parts of the build failed, please correct these error and commit a new revision.\n\n$message" > "$email"
                 mail -s "$subject" "$EMAILADRESS" < "$email"
 
                 # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
@@ -203,30 +229,29 @@ WriteErrorLog()
 }
 
 
-# Cleanup phase functions
 CleanUp()
 {
     rm -rf "$tempDir"
 }
 
 
-# The main subroutine starts here
+########################################
+# The main subroutine                  #
+########################################
 argumentPath="$1"
 set -o nounset
 
 # Setup phase
-SetVariables "$argumentPath" #The user could have provided the path to the repository from the hook
+SetVariables "$argumentPath"
+ExtractUsernameAndEmail
 CreateTempDirectory
-ExtractBranchHead
+ExtractMasterBranchHead
 CreateLogFile
 
 # Execution phase
-ExecuteOptionalFeatures
 RunBuildScripts
 
 # Respond phase
 SendEmail
 WriteBuildLog
-
-# Cleanup phase
 CleanUp
