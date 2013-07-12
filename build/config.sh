@@ -1,16 +1,41 @@
 #!/bin/bash
 
-# The configuration below needs to be set for the script to run
-REPOPATH="Path to your repository" # Can also be set by hook by passing first commandline argument to bashbuilder.sh
+# This file contains all the configuration options available to bashbuilder.sh.
+# All optional features can be set to a 0 to disable and to a 1 enable.
 
-USERNAME="The name to be used at the top of the emails"
-EMAILADRESS="Email address to write to when problems occurs"
+# The only configuration necessary for the script to run is to either set REPOPATH
+# to the path of a repository, or to call it with a path to the script as $1
 
-# Optional features can be enabled and disabled here 
-# 0: Disable 
-# 1: Enable
-LOGBUILDERRORS=0        # Write the log messeage when a build script returns an error
-EMAILBUILDERRORS=0      # Send a mail when a build script returns an error
+################################################################################
+# Path to the repository to run the build scripts on.                          #
+# Can be overridden by $1 if a alternative temporary path is needed.           #
+################################################################################
+REPOPATH=""
 
-EXTRACTUSERNAME=0       # Extract the user name to be put in the email from the latest commit
-EXTRACTEMAILADRESS=0    # Extract the email address to use when any errors have happened from the latest commit
+
+################################################################################
+# Indicates how the log created by the build scripts should by written when a  #
+# build is faulty, it can be written to log file, send as a email or both.     #
+#                                                                              #
+# For email is the configuration of either EMAILADRESS or EXTRACTEMAILADRESS,  #
+# on repositories that contain emails as author or email in the logs necessary.#
+################################################################################
+LOGBUILDERRORS=0
+EMAILBUILDERRORS=0
+
+################################################################################
+# Configure how the system acquires names and emails for logging build errors. #
+# Both can be set either statically or extracted from the latest commit, the   #
+# values extracted from the logs overwrites whatever is set in config.sh.      #
+#                                                                              #
+# Username is written before the log message, so the owner of a commit can be  #
+# identified, which makes the feature most useful if it is extracted from log. #
+#                                                                              #
+# Email address is target address used if EMAILBUILDERRORS is enabled, so the  #
+# use of static or extracted addresses depends on who should receive the email.#
+################################################################################
+USERNAME="user"
+EXTRACTUSERNAME=0
+
+EMAILADRESS="email"
+EXTRACTEMAILADRESS=0

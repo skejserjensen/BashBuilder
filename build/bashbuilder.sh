@@ -7,7 +7,7 @@ source ./config.sh
 SetVariables()
 {
     # Ensures BashBuilder know where to write the log files if errors occurs
-    scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    scriptPath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     tempRoot=$scriptPath"/temporary/"
 
     # Checks if the user have provided the path to the repository from the hook
@@ -16,7 +16,7 @@ SetVariables()
         REPOPATH="$1"
     elif [ ! -d "$REPOPATH" ]
     then
-        WriteErrorLog "neither hook nor config.sh provided a working path"
+        WriteErrorLog "neither the hook nor config.sh provided a repository path to a existing directory."
         exit 1
     fi
 
@@ -33,15 +33,15 @@ SetVariables()
     if [ -f "$REPOPATH""/format" ]
     then
         versionControlSystem=0
-   elif [ -f "$REPOPATH""/HEAD" ]
-   then
+    elif [[ -f "$REPOPATH""/HEAD" || -d "$REPOPATH""/.git" ]]
+    then
         versionControlSystem=1
-   elif [ -d "$REPOPATH""/.hg" ]
-   then
+    elif [ -d "$REPOPATH""/.hg" ]
+    then
         versionControlSystem=2
-   else
-       WriteErrorLog "repopath is not set to a suported version control repository"
-       exit 1
+    else
+        WriteErrorLog "the directory does not contain a repository from a suported version control system."
+        exit 1
     fi
 }
 
@@ -64,7 +64,7 @@ ExtractUsernameAndEmail()
         # Checks if the extracted output looks like a email before trying to use it for sending email notifications
         if [[ "$EMAILADRESS" != *@*.* ]]
         then
-            WriteErrorLog "an useable email could not be extracted from the log file, email with build errors cannot be send"
+            WriteErrorLog "an useable email could not be extracted from the log file, email with build errors cannot be send."
             EMAILBUILDERRORS=0
         fi
 
@@ -198,8 +198,7 @@ SendEmail()
                 # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
                 rm -rf $email
             else
-                WriteErrorLog "mail is not located in path, email with build errors could not be send"
-                exit 1
+                WriteErrorLog "the mail binary is not located in path, email with build errors could not be send."
             fi
         fi
     fi
