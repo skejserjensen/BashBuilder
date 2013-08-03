@@ -1,14 +1,14 @@
 #!/bin/bash
-source ./config.sh
 
 ########################################
 # Setup phase functions                #
 ########################################
 SetVariables()
 {
-    # Ensures BashBuilder know where to write the log files if errors occurs
+    # Ensures BashBuilder know where to write the log files and find the config
     scriptPath="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    tempRoot=$scriptPath"/temporary/"
+    tempRoot="$scriptPath""/temporary/"
+    source "$scriptPath""/config.sh"
 
     # Checks if the user have provided the path to the repository from the hook
     if [ -d "$1" ]
@@ -142,31 +142,36 @@ CreateLogFile()
 RunBuildScripts()
 {
     # The log file name is saved in case one of the build scripts changes the value of the variable instead of just appending text to the file
-    local orgLogFile=$logFile
+    local orgLogFile="$logFile"
     let errors=0
     message=""
-    
-    for file in `find $scriptPath/scripts -executable -type f` ; do
-        cd $tempDir
 
-        $file $logFile
+    # IFS is changed as bash for loops seperates values by spaces
+    SAVEIFS=$IFS
+    IFS=$(echo -en "\n\b")
+
+    for file in `find $scriptPath/scripts -executable -type f` ; do
+        cd "$tempDir"
+
+        "$file" "$logFile"
         let result=$? 
        
         if [ ! $result -eq 0 ]  
         then
             let errors+=$result
-            message=$message"Executing "${file##*/}" resulted in failure, all information about this build is shown below.\n-----\n"$(cat $logFile)"\n\n"
+            message="$message""Executing \""${file##*/}"\" resulted in failure, all information about this build is shown below.\n-----\n"$(cat "$logFile")"\n\n"
         fi
 
         # Some people might not like data on their file system getting overwritten by /dev/null, so we check if they accidentally changed the location of the log 
-        if [ $orgLogFile != $logFile ]
+        if [ "$orgLogFile" != "$logFile" ]
         then
-           logFile=$orgLogFile 
+           logFile="$orgLogFile"
         fi
 
         # The contents of the log file is truncated so its content don't gets written more then once in the email
-        cat /dev/null > $logFile
-    done                                                                                                            
+        cat /dev/null > "$logFile"
+    done
+    IFS=$SAVEIFS
 }
 
 
@@ -196,7 +201,7 @@ SendEmail()
                 mail -s "$subject" "$EMAILADRESS" < "$email"
 
                 # The temp file for the email message is removed to prevent other instances of the program from going into an infinite loop
-                rm -rf $email
+                rm -rf "$email"
             else
                 WriteErrorLog "the mail binary is not located in path, email with build errors could not be send."
             fi
