@@ -29,5 +29,5 @@ The build script functions much like git hooks which means that the only value B
 
 Also a file name is given to the build scripts as the first command line argument, you can use this file to log what part of the build that failed as BashBuilder will included it in the email or log entry as extra information. Some examples of how build scripts can be written are stored in the "/scripts" folder found in the root of the repository. 
 
-##License
+## License
 The program is licensed under version 3 of the GPL, and a copy of the license is bundled with the program.
